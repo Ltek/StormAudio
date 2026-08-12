@@ -1,12 +1,14 @@
 {
-    "domain": "stormaudio",
-    "name": "StormAudio",
-    "dependencies": [],
-    "after_dependencies": [],
-    "requirements": [
-        "telnetlib3==2.0.8"
-    ],
-    "iot_class": "local_push",
-    "version": "0.19.2",
-    "config_flow": true
+  "domain": "stormaudio",
+  "name": "StormAudio",
+  "after_dependencies": [],
+  "codeowners": ["@Ltek"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/Ltek/StormAudio",
+  "homeassistant": "2024.12.0",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/Ltek/StormAudio/issues",
+  "requirements": ["telnetlib3==2.0.8"],
+  "version": "2026.8.12.22"
 }
