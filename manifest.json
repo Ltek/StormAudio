@@ -1,0 +1,12 @@
+{
+    "domain": "stormaudio",
+    "name": "StormAudio",
+    "dependencies": [],
+    "after_dependencies": [],
+    "requirements": [
+        "telnetlib3==2.0.8"
+    ],
+    "iot_class": "local_push",
+    "version": "0.19.2",
+    "config_flow": true
+}

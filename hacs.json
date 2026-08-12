@@ -1,0 +1,16 @@
+{
+    "name": "StormAudio",
+    "render_readme": true,
+    "content_in_root": true,
+    "country": [
+        "US"
+    ],
+    "domains": [
+        "media_player",
+        "number",
+        "select",
+        "switch",
+        "sensor"
+    ],
+    "hide_default_branch": true
+}
