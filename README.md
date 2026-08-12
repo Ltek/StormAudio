@@ -4,6 +4,20 @@
 
 Home Assistant custom component that provides an integration to the StormAudio processors.
 
+## Supported devices
+
+This integration talks to the StormAudio ISP-family TCP/IP API (port 23,
+firmware 4.6r1 or later) and works with every processor built on that
+platform. As of August 2026 that includes:
+
+- StormAudio ISP and ISR series 
+- Focal Astral 16
+- Bryston SP4
+
+Focal- and Bryston-branded units share the same API, so they work too -
+with the documented exceptions that a few commands (e.g. Front Panel
+Color) aren't available on those brands. See Notes below.
+
 ## Entities
 
 - `media_player` - main device control (power, volume, mute, source, sound mode)
@@ -28,7 +42,7 @@ Home Assistant custom component that provides an integration to the StormAudio p
   - Surround Mode (+ `engaged` attribute), StormXT
   - Video Resolution, Video Encoding, Video Refresh Rate, Video Input,
     Video Sync, Video Copy Protection, Video Color Space, Video Color
-    Depth, Video Mode
+    Depth, Video Mode (one set per HDMI output - see Notes)
   - Active Speaker Config, Sample Rate, Stream Type, Channel Format
 
 Per-zone and per-trigger entities are created dynamically based on what
@@ -41,10 +55,16 @@ this integration rather than pulled in as a separate pip dependency.
 
 ## Notes
 
-- Video info reads HDMI OUT 1 only (the primary display output on nearly
-  all installs). If your primary display is on HDMI OUT 2, the
-  `hdmi2_*` equivalents would need to be added to `DeviceState` and
-  wired into `sensor.py` the same way `hdmi1_*` is done.
+- Video info is read for every HDMI output listed in `HDMI_OUTPUT_IDS`
+  (`stormaudio_telnet/constants.py`) - HDMI OUT 1 and OUT 2 by default.
+  The HDMI OUT 1 sensors are enabled by default. The HDMI OUT 2 sensors (named
+  `... Video Resolution (HDMI OUT 2)`, etc.) are **created disabled**;
+  if your display is on HDMI OUT 2 or you run dual displays, enable the
+  ones you want from the entity's settings (Settings → Devices &
+  Services → StormAudio → entity → gear icon → Enable). No code change or
+  restart config is needed. If a future unit exposes more than two HDMI
+  outputs, add the output number to `HDMI_OUTPUT_IDS` and the client and
+  sensors pick it up automatically.
 - Zone sub-controls (mute/bass/treble/eq/binaural mode/lipsync) rely on
   the StormAudio device resending its full `zones.list` broadcast whenever any zone
   field changes (per the API doc) rather than parsing each zone's
@@ -53,6 +73,5 @@ this integration rather than pulled in as a separate pip dependency.
   SphereAudio) - when not licensed, the StormAudio device returns `error`, which shows
   up as `unavailable` for the corresponding sensor/select rather than a
   numeric value.
-- Front Panel Color isn't available on Bryston/Focal-branded units; the
-  StormAudio device simply won't respond to that command on those units, so the select
-  entity will just stay at "unknown" there.
+- For Bryston/Focal-branded units, Front Panel Color isn't available; 
+  these devices do not respond to that command so the entity will always show "unknown".
