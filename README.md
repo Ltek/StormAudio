@@ -77,3 +77,33 @@ this integration rather than pulled in as a separate pip dependency.
   numeric value.
 - For Bryston/Focal-branded units, Front Panel Color isn't available; 
   these devices do not respond to that command so the entity will always show "unknown".
+
+## Installation
+
+This integration is not in the HACS store, so install it as a
+HACS **custom repository** (recommended) or copy the files in manually.
+
+### HACS (recommended)
+
+1. Go to HACS → ⋮ (top-right menu) → **Custom repositories**.
+2. Add this repo URL - `https://github.com/Ltek/StormAudio` - with
+   category **Integration**.
+3. Find **StormAudio** in the HACS list and click **Download**.
+4. **Restart Home Assistant** (Settings → System → Restart). 
+5. Add the integration: Settings → Devices & Services → **Add
+   Integration** → search for **StormAudio**, then enter your
+   processor's host/IP and a name.
+
+### Manual
+
+1. Copy the integration folder to your Home Assistant config directory so
+   the files land at:
+   `/config/custom_components/stormaudio/`
+   (i.e. `/config/custom_components/stormaudio/manifest.json`,
+   `.../__init__.py`, `.../media_player.py`, `.../stormaudio_telnet/`, etc.)
+2. **Restart Home Assistant** (Settings → System → Restart).
+3. Add the integration: Settings → Devices & Services → **Add
+   Integration** → search for **StormAudio**, then enter your
+   processor's host/IP and a name.
+
+NOTE: **restart is required** after installing or updating it - a config-entry "Reload" will not pick up new code.
