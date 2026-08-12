@@ -2,21 +2,23 @@
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
 
-Home Assistant custom component that provides an integration to the StormAudio processors.
+Home Assistant custom component integration for StormAudio, Focal and Bryston processors.
+
+
 
 ## Supported devices
 
-This integration talks to the StormAudio ISP-family TCP/IP API (port 23,
-firmware 4.6r1 or later) and works with every processor built on that
-platform. As of August 2026 that includes:
+Integration supports the StormAudio family of processeors that use the published TCP/IP API (port 23,
+firmware 4.6r1 or later) platform as of August 2026:
 
 - StormAudio ISP and ISR series 
 - Focal Astral 16
 - Bryston SP4
 
-Focal- and Bryston-branded units share the same API, so they work too -
-with the documented exceptions that a few commands (e.g. Front Panel
-Color) aren't available on those brands. See Notes below.
+Focal and Bryston branded units share the same API with one documented exception that Front Panel
+Color) aren't available on those brands.
+
+This is the most feature rich, and robust Home Assistant integration for StormAudio.
 
 ## Entities
 
