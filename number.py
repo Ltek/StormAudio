@@ -171,6 +171,7 @@ async def async_setup_entry(
                 None,
                 lambda device_state: device_state.auro_strength,
                 lambda coordinator, value: coordinator.async_set_auro_strength(value),
+                enabled_default=False,
             ),
             StormAudioTrimNumber(
                 coordinator,
@@ -200,6 +201,7 @@ async def async_setup_entry(
                     value
                 ),
                 step=FRONTPANEL_BRIGHTNESS_STEP,
+                enabled_default=False,
             ),
             StormAudioTrimNumber(
                 coordinator,
@@ -215,6 +217,7 @@ async def async_setup_entry(
                     value
                 ),
                 step=FRONTPANEL_BRIGHTNESS_STEP,
+                enabled_default=False,
             ),
         ]
     )
@@ -374,6 +377,7 @@ class StormAudioTrimNumber(CoordinatorEntity, NumberEntity):
         get_value_fn,
         async_set_value_fn,
         step: float = 1.0,
+        enabled_default: bool = True,
     ) -> None:
         """Initialize."""
         super().__init__(coordinator)
@@ -390,6 +394,7 @@ class StormAudioTrimNumber(CoordinatorEntity, NumberEntity):
         self._attr_name = name
 
         self._attr_device_info = parent_device_info
+        self._attr_entity_registry_enabled_default = enabled_default
         self._get_value_fn = get_value_fn
         self._async_set_value_fn = async_set_value_fn
 
@@ -469,6 +474,7 @@ class StormAudioZoneVolumeNumber(CoordinatorEntity, NumberEntity):
         self._attr_name = name
 
         self._attr_device_info = parent_device_info
+        self._attr_entity_registry_enabled_default = False
         self._zone_id = zone_id
 
         self._set_state_from_device()
@@ -545,6 +551,7 @@ class StormAudioZoneTrimNumber(CoordinatorEntity, NumberEntity):
         self._attr_name = name
 
         self._attr_device_info = parent_device_info
+        self._attr_entity_registry_enabled_default = False
         self._zone_id = zone_id
         self._get_zone_value_fn = get_zone_value_fn
         self._async_set_value_fn = async_set_value_fn

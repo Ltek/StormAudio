@@ -7,16 +7,25 @@ support.
 
 from __future__ import annotations
 from asyncio import create_task, Event, sleep, Task, timeout, TimeoutError
-from decimal import *
+from decimal import Decimal
 from enum import IntFlag, auto
 import logging
 
-import typing
-
 import telnetlib3
 
-from .constants import *
-from .line_reader import *
+from .constants import (
+    AudioInputID,
+    AudioZone2InputID,
+    FRONT_PANEL_COLORS,
+    HDMI_OUTPUT_FIELDS,
+    HDMI_OUTPUT_IDS,
+    PowerCommand,
+    ProcessorState,
+    VideoInputID,
+    ZoneLayoutType,
+    ZoneType,
+)
+from .line_reader import TokenizedLineReader, TokenizedLinesReader
 # (already relative - these two files live alongside telnet_client.py in
 # this vendored stormaudio_telnet/ subpackage)
 
@@ -45,11 +54,16 @@ class DeviceState:
         # StormXT (section 3.4.13.8): True/False, or "error" (str) if the
         # StormXT license is not activated on this unit
         self.stormxt: bool | str = None
-        # HDMI video info (section 3.9.1); output 1 only, since that's the
-        # primary display output on nearly all installs. Add hdmi2_* fields
-        # the same way if you need a second sensor for HDMI OUT 2.
-        self.hdmi1_video_timing: str = None
-        self.hdmi1_hdr: str = None
+        # HDMI video info (section 3.9.1). Keyed by output id (see
+        # HDMI_OUTPUT_IDS) -> {field name -> value}, e.g.
+        # self.hdmi[1]["timing"]. Every output in HDMI_OUTPUT_IDS gets an
+        # entry populated with None so callers can read a field for any
+        # declared output without a KeyError before the device first
+        # broadcasts it. Use get_hdmi_field() rather than indexing directly.
+        self.hdmi: dict[int, dict[str, str]] = {
+            output_id: {field: None for field in HDMI_OUTPUT_FIELDS}
+            for output_id in HDMI_OUTPUT_IDS
+        }
         # Audio trim controls (sections 3.4.5-3.4.12); all in dB (int),
         # except lipsync which is in ms (int)
         self.bass_db: int = None
@@ -82,13 +96,7 @@ class DeviceState:
         self.stream_type: str = None
         self.channel_format: str = None
 
-        # --- HDMI info (section 3.9), output 1 only (primary display) ---
-        self.hdmi1_video_input: str = None
-        self.hdmi1_sync: str = None
-        self.hdmi1_cp: str = None
-        self.hdmi1_colorspace: str = None
-        self.hdmi1_colordepth: str = None
-        self.hdmi1_mode: str = None
+        # (HDMI info is stored in self.hdmi above, keyed by output id.)
 
         # --- Front panel (section 3.6.1) ---
         self.frontpanel_color: str = None
@@ -99,6 +107,11 @@ class DeviceState:
         # --- Triggers (section 3.7.1) ---
         self.trigger_names: list[str] = None
         self.trigger_states: dict[int, bool] = {}
+
+    def get_hdmi_field(self, output_id: int, field: str) -> str | None:
+        """Return the parsed value of ssp.hdmi<output_id>.<field>, or None
+        if that output/field hasn't been reported (or isn't tracked)."""
+        return self.hdmi.get(output_id, {}).get(field)
 
 
 class Input:
@@ -387,19 +400,16 @@ class TelnetClient():
                         self._eval_stormxt
                     )
 
-                    # --- HDMI 1 video info (section 3.9.1) ---
-                    read_result |= self._eval__single_bracket_field(
-                        ['ssp', 'hdmi1', 'timing'],
-                        lambda x: self._device_state.__setattr__(
-                            'hdmi1_video_timing', x),
-                        lambda x: x.strip('"')
-                    )
-                    read_result |= self._eval__single_bracket_field(
-                        ['ssp', 'hdmi1', 'hdr'],
-                        lambda x: self._device_state.__setattr__(
-                            'hdmi1_hdr', x),
-                        lambda x: x.strip('"')
-                    )
+                    # --- HDMI video info (section 3.9.1), all outputs ---
+                    # ssp.hdmi<N>.<field> for every output in
+                    # HDMI_OUTPUT_IDS; parsed into device_state.hdmi[N].
+                    for output_id in HDMI_OUTPUT_IDS:
+                        for field in HDMI_OUTPUT_FIELDS:
+                            read_result |= self._eval__single_bracket_field(
+                                ['ssp', f'hdmi{output_id}', field],
+                                self._make_set_hdmi_field(output_id, field),
+                                lambda x: x.strip('"')
+                            )
 
                     # --- Audio trim controls (sections 3.4.5-3.4.12) ---
                     read_result |= self._eval__single_bracket_field(
@@ -442,7 +452,7 @@ class TelnetClient():
                         ['ssp', 'lipsync'],
                         lambda x: self._device_state.__setattr__(
                             'lipsync_ms', x),
-                        lambda x: int(x)
+                        lambda x: int(float(x))
                     )
 
                     # --- Additional theater controls (section 3.4) ---
@@ -533,43 +543,9 @@ class TelnetClient():
                         lambda x: x
                     )
 
-                    # --- Additional HDMI 1 info (section 3.9.1) ---
-                    read_result |= self._eval__single_bracket_field(
-                        ['ssp', 'hdmi1', 'input'],
-                        lambda x: self._device_state.__setattr__(
-                            'hdmi1_video_input', x),
-                        lambda x: x.strip('"')
-                    )
-                    read_result |= self._eval__single_bracket_field(
-                        ['ssp', 'hdmi1', 'sync'],
-                        lambda x: self._device_state.__setattr__(
-                            'hdmi1_sync', x),
-                        lambda x: x.strip('"')
-                    )
-                    read_result |= self._eval__single_bracket_field(
-                        ['ssp', 'hdmi1', 'cp'],
-                        lambda x: self._device_state.__setattr__(
-                            'hdmi1_cp', x),
-                        lambda x: x.strip('"')
-                    )
-                    read_result |= self._eval__single_bracket_field(
-                        ['ssp', 'hdmi1', 'colorspace'],
-                        lambda x: self._device_state.__setattr__(
-                            'hdmi1_colorspace', x),
-                        lambda x: x.strip('"')
-                    )
-                    read_result |= self._eval__single_bracket_field(
-                        ['ssp', 'hdmi1', 'colordepth'],
-                        lambda x: self._device_state.__setattr__(
-                            'hdmi1_colordepth', x),
-                        lambda x: x.strip('"')
-                    )
-                    read_result |= self._eval__single_bracket_field(
-                        ['ssp', 'hdmi1', 'mode'],
-                        lambda x: self._device_state.__setattr__(
-                            'hdmi1_mode', x),
-                        lambda x: x.strip('"')
-                    )
+                    # (All ssp.hdmi<N>.<field> lines - including input/sync/
+                    # cp/colorspace/colordepth/mode - are handled by the
+                    # single HDMI loop above.)
 
                     # --- Front panel (section 3.6.1) ---
                     read_result |= self._eval__line(
@@ -698,8 +674,10 @@ class TelnetClient():
         await self._async_send_command('ssp.stormxt.toggle')
 
     async def async_set_bass(self, bass_db: int):
-        """Set bass tone control, -6..6 dB step 1 (further limited by the
-        installer-configured Audio Control Range MAX on the unit)."""
+        """Set bass tone control, -6..6 dB step 1. Actual max is further
+        clamped by the device's own WebUI Settings > Audio Control Range
+        MAX for this control - the device silently ignores (re-echoes
+        unchanged) any set beyond that installer-configured range."""
         await self._async_send_command(f'ssp.bass.[{bass_db}]')
 
     async def async_set_treble(self, treble_db: int):
@@ -1100,6 +1078,15 @@ class TelnetClient():
                 return ReadLinesResult.IGNORED
         return ReadLinesResult.INCOMPLETE
 
+    def _make_set_hdmi_field(self, output_id: int, field: str):
+        """Returns a setter for device_state.hdmi[output_id][field], closed
+        over the output id and field name (neither can be a wildcard in the
+        token-matching scheme, so we register one setter per output/field
+        pair rather than parsing the output number out of the token)."""
+        def set_hdmi_field(value: str) -> None:
+            self._device_state.hdmi[output_id][field] = value
+        return set_hdmi_field
+
     def _make_eval_trigger_state(self, trigger_num: int):
         """Returns an eval function for ssp.trigX on/off, closed over the
         trigger number (X can't be a wildcard in the token-matching
@@ -1198,7 +1185,7 @@ class TelnetClient():
 
                     def as_int(idx):
                         v = field(idx)
-                        return int(v) if v is not None else None
+                        return int(float(v)) if v is not None else None
 
                     def as_bool(idx):
                         v = field(idx)

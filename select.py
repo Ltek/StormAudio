@@ -112,6 +112,7 @@ async def async_setup_entry(
                 lambda coordinator, selected_id: coordinator.async_set_input_zone2_id(
                     selected_id
                 ),
+                enabled_default=False,
             ),
             StormAudioSelect(
                 coordinator,
@@ -151,6 +152,7 @@ async def async_setup_entry(
                 lambda coordinator, selected_id: coordinator.async_set_auro_preset(
                     selected_id
                 ),
+                enabled_default=False,
             ),
             StormAudioSelect(
                 coordinator,
@@ -189,6 +191,7 @@ async def async_setup_entry(
                 lambda coordinator, selected_id: coordinator.async_set_frontpanel_stbytime(
                     selected_id
                 ),
+                enabled_default=False,
             ),
             StormAudioStringSelect(
                 coordinator,
@@ -198,6 +201,7 @@ async def async_setup_entry(
                 ["on", "off", "auto"],
                 lambda device_state: device_state.drc,
                 lambda coordinator, selected: coordinator.async_set_drc(selected),
+                enabled_default=False,
             ),
             StormAudioStringSelect(
                 coordinator,
@@ -209,6 +213,7 @@ async def async_setup_entry(
                 lambda coordinator, selected: coordinator.async_set_imax_mode(
                     selected
                 ),
+                enabled_default=False,
             ),
             StormAudioStringSelect(
                 coordinator,
@@ -220,6 +225,7 @@ async def async_setup_entry(
                 lambda coordinator, selected: coordinator.async_set_frontpanel_color(
                     selected
                 ),
+                enabled_default=False,
             ),
         ]
     )
@@ -238,6 +244,7 @@ class StormAudioSelect(CoordinatorEntity, SelectEntity):
         get_id_name_map_fn,
         get_current_id_fn,
         async_set_current_id_fn,
+        enabled_default: bool = True,
     ) -> None:
         """Initialize."""
         super().__init__(coordinator)
@@ -250,6 +257,7 @@ class StormAudioSelect(CoordinatorEntity, SelectEntity):
         self._attr_name = name
 
         self._attr_device_info = parent_device_info
+        self._attr_entity_registry_enabled_default = enabled_default
         self._is_data_available_fn = is_data_available_fn
         self._get_id_name_map_fn = get_id_name_map_fn
         self._get_current_id_fn = get_current_id_fn
@@ -320,6 +328,7 @@ class StormAudioStringSelect(CoordinatorEntity, SelectEntity):
         options: list[str],
         get_current_value_fn,
         async_set_value_fn,
+        enabled_default: bool = True,
     ) -> None:
         """Initialize."""
         super().__init__(coordinator)
@@ -332,6 +341,7 @@ class StormAudioStringSelect(CoordinatorEntity, SelectEntity):
         self._attr_name = name
 
         self._attr_device_info = parent_device_info
+        self._attr_entity_registry_enabled_default = enabled_default
         self._get_current_value_fn = get_current_value_fn
         self._async_set_value_fn = async_set_value_fn
 

@@ -1,6 +1,7 @@
 # Home Assistant integration for StormAudio processors
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
+[![Open your Home Assistant instance and open this repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Ltek&repository=StormAudio&category=integration)
 
 Home Assistant custom component integration for StormAudio, Focal and Bryston processors.
 
@@ -8,17 +9,54 @@ Home Assistant custom component integration for StormAudio, Focal and Bryston pr
 
 ## Supported devices
 
-Integration supports the StormAudio family of processeors that use the published TCP/IP API (port 23,
+Integration supports the StormAudio family of processors that use the published TCP/IP API (port 23,
 firmware 4.6r1 or later) platform as of August 2026:
 
 - StormAudio ISP and ISR series 
 - Focal Astral 16
 - Bryston SP4
 
-Focal and Bryston branded units share the same API with one documented exception that Front Panel
-Color) aren't available on those brands.
+Focal and Bryston branded units share the same API, with one documented exception: Front Panel
+Color isn't available on those brands.
 
 This is the most feature rich, and robust Home Assistant integration for StormAudio.
+
+## Installation
+
+This integration is not in the default HACS store, so install it as a HACS
+**custom repository** (recommended) or copy the files in manually.
+
+### HACS (recommended)
+
+[![Open your Home Assistant instance and open this repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Ltek&repository=StormAudio&category=integration)
+
+1. Click the button above (it opens HACS on your Home Assistant and
+   pre-fills this repository), **or** go to HACS → ⋮ (top-right menu) →
+   **Custom repositories** and add `https://github.com/Ltek/StormAudio`
+   with category **Integration**.
+2. Find **StormAudio** in the HACS list and click **Download**.
+3. **Restart Home Assistant** (Settings → System → Restart).
+4. Add the integration: Settings → Devices & Services → **Add
+   Integration** → search for **StormAudio**, then enter your processor's
+   host/IP and a name.
+
+### Manual
+
+1. Copy the integration folder to your Home Assistant config directory so
+   the files land at:
+   `/config/custom_components/stormaudio/`
+   (i.e. `/config/custom_components/stormaudio/manifest.json`,
+   `.../__init__.py`, `.../media_player.py`, `.../stormaudio_telnet/`, etc.)
+2. **Restart Home Assistant** (Settings → System → Restart).
+3. Add the integration: Settings → Devices & Services → **Add
+   Integration** → search for **StormAudio**, then enter your processor's
+   host/IP and a name.
+
+> A **restart is required** after installing or updating this integration -
+> it loads as Python code at Home Assistant startup, so a config-entry
+> "Reload" will not pick up new code. (Unlike a dashboard card, an
+> integration is not registered under Dashboards → Resources and does not
+> need a browser refresh.)
 
 ## Entities
 
@@ -77,33 +115,3 @@ this integration rather than pulled in as a separate pip dependency.
   numeric value.
 - For Bryston/Focal-branded units, Front Panel Color isn't available; 
   these devices do not respond to that command so the entity will always show "unknown".
-
-## Installation
-
-This integration is not in the HACS store, so install it as a
-HACS **custom repository** (recommended) or copy the files in manually.
-
-### HACS (recommended)
-
-1. Go to HACS → ⋮ (top-right menu) → **Custom repositories**.
-2. Add this repo URL - `https://github.com/Ltek/StormAudio` - with
-   category **Integration**.
-3. Find **StormAudio** in the HACS list and click **Download**.
-4. **Restart Home Assistant** (Settings → System → Restart). 
-5. Add the integration: Settings → Devices & Services → **Add
-   Integration** → search for **StormAudio**, then enter your
-   processor's host/IP and a name.
-
-### Manual
-
-1. Copy the integration folder to your Home Assistant config directory so
-   the files land at:
-   `/config/custom_components/stormaudio/`
-   (i.e. `/config/custom_components/stormaudio/manifest.json`,
-   `.../__init__.py`, `.../media_player.py`, `.../stormaudio_telnet/`, etc.)
-2. **Restart Home Assistant** (Settings → System → Restart).
-3. Add the integration: Settings → Devices & Services → **Add
-   Integration** → search for **StormAudio**, then enter your
-   processor's host/IP and a name.
-
-NOTE: **restart is required** after installing or updating it - a config-entry "Reload" will not pick up new code.

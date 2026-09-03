@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 
-from .stormaudio_telnet.constants import SurroundMode
+from .stormaudio_telnet.constants import HDMI_OUTPUT_IDS, SurroundMode
 from .stormaudio_telnet.telnet_client import DeviceState
 
 from homeassistant.components.sensor import SensorEntity
@@ -47,131 +47,170 @@ async def async_setup_entry(
     device_unique_id = coordinator.data["device_unique_id"]
     device_name = coordinator.data["device_name"]
 
-    add_entities(
-        [
+    entities = [
+        StormAudioSensor(
+            coordinator,
+            f"{device_unique_id}_surround_mode",
+            f"{device_name} Surround Mode",
+            device_info,
+            "mdi:surround-sound",
+            _get_surround_mode_name,
+            _get_surround_mode_attrs,
+        ),
+        StormAudioSensor(
+            coordinator,
+            f"{device_unique_id}_stormxt",
+            f"{device_name} StormXT",
+            device_info,
+            "mdi:surround-sound",
+            _get_stormxt_state,
+        ),
+        StormAudioSensor(
+            coordinator,
+            f"{device_unique_id}_active_speaker",
+            f"{device_name} Active Speaker Config",
+            device_info,
+            "mdi:speaker-multiple",
+            lambda ds: ds.active_speaker_id,
+        ),
+        StormAudioSensor(
+            coordinator,
+            f"{device_unique_id}_sample_rate",
+            f"{device_name} Sample Rate",
+            device_info,
+            "mdi:sine-wave",
+            lambda ds: ds.sample_rate,
+        ),
+        StormAudioSensor(
+            coordinator,
+            f"{device_unique_id}_stream_type",
+            f"{device_name} Stream Type",
+            device_info,
+            "mdi:waveform",
+            lambda ds: ds.stream_type,
+        ),
+        StormAudioSensor(
+            coordinator,
+            f"{device_unique_id}_channel_format",
+            f"{device_name} Channel Format",
+            device_info,
+            "mdi:speaker-multiple",
+            lambda ds: ds.channel_format,
+        ),
+    ]
+
+    # Per-output HDMI video sensors. One set is created for every output in
+    # HDMI_OUTPUT_IDS so a user whose display is on HDMI OUT 2 (or who runs
+    # dual displays) can read video info from any output. To keep the OUT 1
+    # entities backwards-compatible, output 1 keeps its original unique_ids
+    # and names and its original enabled-by-default behavior; every other
+    # output's sensors are disabled by default, so they only appear once the
+    # user opts in from the entity settings.
+    for output_id in HDMI_OUTPUT_IDS:
+        entities.extend(
+            _build_video_sensors(
+                coordinator, device_unique_id, device_name, device_info, output_id
+            )
+        )
+
+    add_entities(entities)
+
+
+# (key suffix, name suffix, icon, hdmi field extractor, enabled-by-default on
+# HDMI OUT 1). The extractor takes the DeviceState and the output id.
+_VIDEO_SENSOR_SPECS = [
+    (
+        "video_resolution",
+        "Video Resolution",
+        "mdi:television",
+        lambda ds, out: _split_timing(ds.get_hdmi_field(out, "timing"))[0],
+        True,
+    ),
+    (
+        "video_encoding",
+        "Video Encoding",
+        "mdi:hdr",
+        lambda ds, out: ds.get_hdmi_field(out, "hdr"),
+        True,
+    ),
+    (
+        "video_refresh_rate",
+        "Video Refresh Rate",
+        "mdi:television-ambient-light",
+        lambda ds, out: _split_timing(ds.get_hdmi_field(out, "timing"))[1],
+        True,
+    ),
+    (
+        "video_input",
+        "Video Input",
+        "mdi:hdmi-port",
+        lambda ds, out: ds.get_hdmi_field(out, "input"),
+        False,
+    ),
+    (
+        "video_sync",
+        "Video Sync",
+        "mdi:sync",
+        lambda ds, out: ds.get_hdmi_field(out, "sync"),
+        False,
+    ),
+    (
+        "video_copy_protection",
+        "Video Copy Protection",
+        "mdi:shield-lock",
+        lambda ds, out: ds.get_hdmi_field(out, "cp"),
+        False,
+    ),
+    (
+        "video_colorspace",
+        "Video Color Space",
+        "mdi:palette",
+        lambda ds, out: ds.get_hdmi_field(out, "colorspace"),
+        True,
+    ),
+    (
+        "video_colordepth",
+        "Video Color Depth",
+        "mdi:palette-outline",
+        lambda ds, out: ds.get_hdmi_field(out, "colordepth"),
+        True,
+    ),
+    (
+        "video_mode",
+        "Video Mode",
+        "mdi:television-guide",
+        lambda ds, out: ds.get_hdmi_field(out, "mode"),
+        False,
+    ),
+]
+
+
+def _build_video_sensors(
+    coordinator, device_unique_id, device_name, device_info, output_id
+) -> list["StormAudioSensor"]:
+    """Build the video-info sensors for a single HDMI output."""
+    # OUT 1 keeps the original unique_id/name (no suffix) so upgrading
+    # installs don't get a second set of "unknown" entities; higher outputs
+    # get an "_hdmiN" unique_id suffix and an "HDMI OUT N" label, and are
+    # disabled by default.
+    is_primary = output_id == HDMI_OUTPUT_IDS[0]
+    id_suffix = "" if is_primary else f"_hdmi{output_id}"
+    name_suffix = "" if is_primary else f" (HDMI OUT {output_id})"
+
+    sensors = []
+    for key, name, icon, extractor, enabled_on_primary in _VIDEO_SENSOR_SPECS:
+        sensors.append(
             StormAudioSensor(
                 coordinator,
-                f"{device_unique_id}_surround_mode",
-                f"{device_name} Surround Mode",
+                f"{device_unique_id}_{key}{id_suffix}",
+                f"{device_name} {name}{name_suffix}",
                 device_info,
-                "mdi:surround-sound",
-                _get_surround_mode_name,
-                _get_surround_mode_attrs,
-            ),
-            StormAudioSensor(
-                coordinator,
-                f"{device_unique_id}_stormxt",
-                f"{device_name} StormXT",
-                device_info,
-                "mdi:surround-sound",
-                _get_stormxt_state,
-            ),
-            StormAudioSensor(
-                coordinator,
-                f"{device_unique_id}_video_resolution",
-                f"{device_name} Video Resolution",
-                device_info,
-                "mdi:television",
-                lambda ds: _split_timing(ds.hdmi1_video_timing)[0],
-            ),
-            StormAudioSensor(
-                coordinator,
-                f"{device_unique_id}_video_encoding",
-                f"{device_name} Video Encoding",
-                device_info,
-                "mdi:hdr",
-                lambda ds: ds.hdmi1_hdr,
-            ),
-            StormAudioSensor(
-                coordinator,
-                f"{device_unique_id}_video_refresh_rate",
-                f"{device_name} Video Refresh Rate",
-                device_info,
-                "mdi:television-ambient-light",
-                lambda ds: _split_timing(ds.hdmi1_video_timing)[1],
-            ),
-            StormAudioSensor(
-                coordinator,
-                f"{device_unique_id}_active_speaker",
-                f"{device_name} Active Speaker Config",
-                device_info,
-                "mdi:speaker-multiple",
-                lambda ds: ds.active_speaker_id,
-            ),
-            StormAudioSensor(
-                coordinator,
-                f"{device_unique_id}_sample_rate",
-                f"{device_name} Sample Rate",
-                device_info,
-                "mdi:sine-wave",
-                lambda ds: ds.sample_rate,
-            ),
-            StormAudioSensor(
-                coordinator,
-                f"{device_unique_id}_stream_type",
-                f"{device_name} Stream Type",
-                device_info,
-                "mdi:waveform",
-                lambda ds: ds.stream_type,
-            ),
-            StormAudioSensor(
-                coordinator,
-                f"{device_unique_id}_channel_format",
-                f"{device_name} Channel Format",
-                device_info,
-                "mdi:speaker-multiple",
-                lambda ds: ds.channel_format,
-            ),
-            StormAudioSensor(
-                coordinator,
-                f"{device_unique_id}_video_input",
-                f"{device_name} Video Input",
-                device_info,
-                "mdi:hdmi-port",
-                lambda ds: ds.hdmi1_video_input,
-            ),
-            StormAudioSensor(
-                coordinator,
-                f"{device_unique_id}_video_sync",
-                f"{device_name} Video Sync",
-                device_info,
-                "mdi:sync",
-                lambda ds: ds.hdmi1_sync,
-            ),
-            StormAudioSensor(
-                coordinator,
-                f"{device_unique_id}_video_copy_protection",
-                f"{device_name} Video Copy Protection",
-                device_info,
-                "mdi:shield-lock",
-                lambda ds: ds.hdmi1_cp,
-            ),
-            StormAudioSensor(
-                coordinator,
-                f"{device_unique_id}_video_colorspace",
-                f"{device_name} Video Color Space",
-                device_info,
-                "mdi:palette",
-                lambda ds: ds.hdmi1_colorspace,
-            ),
-            StormAudioSensor(
-                coordinator,
-                f"{device_unique_id}_video_colordepth",
-                f"{device_name} Video Color Depth",
-                device_info,
-                "mdi:palette-outline",
-                lambda ds: ds.hdmi1_colordepth,
-            ),
-            StormAudioSensor(
-                coordinator,
-                f"{device_unique_id}_video_mode",
-                f"{device_name} Video Mode",
-                device_info,
-                "mdi:television-guide",
-                lambda ds: ds.hdmi1_mode,
-            ),
-        ]
-    )
+                icon,
+                (lambda ex, out: lambda ds: ex(ds, out))(extractor, output_id),
+                enabled_default=enabled_on_primary if is_primary else False,
+            )
+        )
+    return sensors
 
 
 def _get_surround_mode_name(device_state: DeviceState) -> str | None:
@@ -227,6 +266,7 @@ class StormAudioSensor(CoordinatorEntity, SensorEntity):
         icon: str,
         get_value_fn,
         get_extra_attrs_fn=None,
+        enabled_default: bool = True,
     ) -> None:
         """Initialize."""
         super().__init__(coordinator)
@@ -235,6 +275,7 @@ class StormAudioSensor(CoordinatorEntity, SensorEntity):
         self._attr_icon = icon
         self._attr_name = name
         self._attr_device_info = parent_device_info
+        self._attr_entity_registry_enabled_default = enabled_default
         self._get_value_fn = get_value_fn
         self._get_extra_attrs_fn = get_extra_attrs_fn
 

@@ -13,6 +13,7 @@ import voluptuous as vol
 from homeassistant.components.media_player import (
     PLATFORM_SCHEMA as MEDIA_PLAYER_PLATFORM_SCHEMA,
 )
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_NAME
 from homeassistant.core import HomeAssistant
 import homeassistant.helpers.config_validation as cv
@@ -32,14 +33,16 @@ MEDIA_PLAYER_PLATFORM_SCHEMA = MEDIA_PLAYER_PLATFORM_SCHEMA.extend(
 class StormAudioCoordinator(DataUpdateCoordinator):
     """StormAudio data update coordinator."""
 
-    def __init__(self, hass: HomeAssistant, host: str) -> None:
+    def __init__(self, hass: HomeAssistant, entry: ConfigEntry, host: str) -> None:
         """Initialize coordinator."""
         super().__init__(
             hass,
             _LOGGER,
             # Name of the data. For logging purposes.
             name="StormAudio",
+            config_entry=entry,
         )
+        self._entry: ConfigEntry = entry
         self._host: str = host
         self._telnet_client: TelnetClient = TelnetClient(
             self._host,
@@ -96,8 +99,8 @@ class StormAudioCoordinator(DataUpdateCoordinator):
 
     async def _async_on_device_state_updated(self) -> None:
         device_state: DeviceState = self._telnet_client.get_device_state()
-        device_unique_id: str = self.config_entry.unique_id
-        device_name: str = self.config_entry.title
+        device_unique_id: str = self._entry.unique_id
+        device_name: str = self._entry.title
         device_info: DeviceInfo = DeviceInfo(
             identifiers={(DOMAIN, device_unique_id)},
             manufacturer=device_state.brand,

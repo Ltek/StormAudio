@@ -385,6 +385,7 @@ class StormAudioZoneToggleSwitch(CoordinatorEntity, SwitchEntity):
         self._attr_name = name
 
         self._attr_device_info = parent_device_info
+        self._attr_entity_registry_enabled_default = False
         self._zone_id = zone_id
         self._get_zone_value_fn = get_zone_value_fn
         self._async_turn_on_fn = async_turn_on_fn
@@ -444,6 +445,7 @@ class StormAudioTriggerSwitch(CoordinatorEntity, SwitchEntity):
         self._attr_name = name
 
         self._attr_device_info = parent_device_info
+        self._attr_entity_registry_enabled_default = False
         self._trigger_num = trigger_num
 
         self._set_state_from_device()

@@ -140,3 +140,25 @@ class LoudnessLevel(Enum):
 
 FRONT_PANEL_COLORS = ["blue", "red", "green", "white", "magenta", "orange"]
 FRONT_PANEL_STANDBY_DELAYS = [2, 5, 10, 20, 30, 60]
+
+# HDMI output ports the processor reports video info for (ssp.hdmiN.* -
+# section 3.9.1). StormAudio ISP units have two HDMI outputs; both are
+# declared here so the client parses each and a sensor is created per
+# output. If a future unit exposes more outputs, just extend this list -
+# the client and sensor platform iterate over it. The individual video
+# sensors for every output except OUT 1 are created disabled by default,
+# so a user with a second display just enables the HDMI OUT 2 sensors
+# they care about from the entity settings.
+HDMI_OUTPUT_IDS = [1, 2]
+
+# Raw per-output fields reported under ssp.hdmiN.* (section 3.9.1).
+HDMI_OUTPUT_FIELDS = [
+    "timing",
+    "hdr",
+    "input",
+    "sync",
+    "cp",
+    "colorspace",
+    "colordepth",
+    "mode",
+]

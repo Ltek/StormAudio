@@ -1,0 +1,47 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "StormAudio Setup",
+        "description": "Enter the Host and Name for your StormAudio processor.\n\nNOTE: On the next screen Home Assistant will ask you to select an Area - this is optional. If you select an Area, Home Assistant will prefix the Device Name with the Area (for example: \u201cTheater StormAudio\u201d) and Entity IDs will automatically have that Area prefix. If you skip Area selection, no prefix will be added. You can change the Area later. If you do later, Entity IDs will not automatically be renamed unless you manually have Home Assistant rename them.",
+        "data": {
+          "host": "Host (IP or hostname)",
+          "name": "Name"
+        },
+        "data_description": {
+          "host": "The hostname or IP address of the StormAudio processor on your network, e.g. 192.168.1.50 or stormaudio.local. This is stored in the config entry and used every time Home Assistant connects to the device.",
+          "name": "The friendly name for this device, e.g. Theater StormAudio. This becomes the integration entry's title and the device name shown throughout the Home Assistant UI (dashboards, entity names, notifications). You can rename it later from the device page."
+        }
+      },
+      "reconfigure": {
+        "title": "Update StormAudio Connection",
+        "description": "Update the Host and Name for this StormAudio processor - use this if the device's IP address or hostname has changed.",
+        "data": {
+          "host": "Host (IP or hostname)",
+          "name": "Name"
+        },
+        "data_description": {
+          "host": "The new hostname or IP address of this StormAudio processor. Enter the address of the SAME physical unit this entry was originally set up for - pointing this at a different StormAudio unit will be rejected.",
+          "name": "The friendly name for this device."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Unable to connect to the StormAudio processor. Check the host and make sure the processor is powered on and reachable."
+    },
+    "abort": {
+      "reconfigure_successful": "Connection details updated successfully.",
+      "unique_id_mismatch": "This host belongs to a different StormAudio device than the one originally configured. If you meant to point this entry at a new device, remove it and add it again instead."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "StormAudio Options",
+        "data": {
+          "scan_interval": "Polling interval (seconds)"
+        }
+      }
+    }
+  }
+}
